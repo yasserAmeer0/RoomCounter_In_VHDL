@@ -1,0 +1,78 @@
+---- Yasser Ameer 
+-----Project coen 313 Summer 1 2023
+---- 40212780 	
+	
+
+	library IEEE;
+	use IEEE.std_logic_1164.all;
+	use IEEE.std_logic_unsigned.all;
+
+	entity counter_project is
+	port( x , y, clk ,reset : in std_logic; 
+	max : in std_logic_vector(5 downto 0); 
+	nmb_of_ppl: out std_logic_vector ( 5 downto 0);
+	z : out std_logic);
+	end counter_project ;
+
+	architecture archcounter of counter_project is 
+
+	signal r_reg, r_next:  std_logic_vector ( 5 downto 0);-- the D ff counter  
+	signal max_sig  :  std_logic_vector ( 5 downto 0); ---max_occupency signal
+	signal z_sig,f_wait :  std_logic; -- the z output signal
+	signal x_reg , x_next,y_next,y_reg : std_logic; -- D ff next state and present state for the x and y
+	signal not_x, not_y : std_logic; -- not gate used in the code
+	signal x_sig, y_sig : std_logic; -- input x and y sensor
+
+	begin
+
+---- D FF for the counter,for the input x and y 
+	process( clk, reset) 
+	begin 
+		if ( reset='1') then 
+	
+			r_reg<=("000000");
+			x_reg<=('0');
+			y_reg<=('0');	
+
+		elsif ( rising_edge(clk)) then
+
+			r_reg<=r_next;
+			x_reg<=x_next; 
+			y_reg<=y_next; 
+		end if;
+	end process;
+
+-- next state code mux combination (00-01-10-11) 
+	r_next<=r_reg when (x_sig='0' and y_sig='0') else
+		r_reg+ "000001" when (x_sig='1' and y_sig='0') else
+		r_reg- "000001" when (x_sig='0'and y_sig='1') else
+		r_reg;
+
+
+--- the mux for the both input x and y
+	x_next<= '1' when (x='1' and z_sig='0') else '0';
+	y_next<= '1' when (y='1') else '0';
+
+--- maximum process to determine if the max input is bigger than 63 or not 
+
+	process(max)
+	begin 
+		if (max<"111111") then 
+			max_sig<=max;
+		else
+			max_sig<="111111";
+		end if;
+	end process;
+---- input signal 
+	
+
+	 not_x<=not x;
+	 not_y<=not y;
+	x_sig<= x_reg and not_x;
+	y_sig <= y_reg and not_y;
+
+--- the mux for the output light if it more than the limit than z=1 red light
+	z_sig<= '1' when (r_reg>=max_sig) else '0';
+	nmb_of_ppl<=r_reg;
+	z<=z_sig; 
+end archcounter;
